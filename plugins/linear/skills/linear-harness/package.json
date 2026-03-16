@@ -1,0 +1,30 @@
+{
+  "name": "linear-harness",
+  "version": "0.1.0",
+  "author": "chorus-aidlc",
+  "license": "MIT",
+  "chorus": {
+    "category": "project-management",
+    "mcp_server": "linear",
+    "files": {
+      "skill": "SKILL.md",
+      "00-common-tools": "references/00-common-tools.md",
+      "01-setup": "references/01-setup.md",
+      "02-pm-workflow": "references/02-pm-workflow.md",
+      "03-developer-workflow": "references/03-developer-workflow.md",
+      "04-admin-workflow": "references/04-admin-workflow.md",
+      "05-session-management": "references/05-session-management.md",
+      "06-agent-teams": "references/06-agent-teams.md",
+      "07-label-conventions": "references/07-label-conventions.md"
+    },
+    "requires": {
+      "mcp": ["linear"]
+    },
+    "triggers": [
+      "linear", "issue", "project", "cycle", "sprint",
+      "claim task", "create proposal", "submit proposal",
+      "session", "sub-agent", "swarm", "agent team",
+      "harness", "ai-dlc", "workflow"
+    ]
+  }
+}

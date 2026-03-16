@@ -1,0 +1,13 @@
+{
+  "name": "linear-development-harness",
+  "description": "AI-DLC development harness for Linear. Automates session lifecycle, provides Claude Code hooks for PM/Developer/Admin workflows, and enables multi-agent team observability on Linear.",
+  "version": "0.1.0",
+  "author": { "name": "Chorus-AIDLC" },
+  "homepage": "https://github.com/Chorus-AIDLC/development-harness",
+  "repository": "https://github.com/Chorus-AIDLC/development-harness",
+  "license": "MIT",
+  "keywords": [
+    "linear", "ai-dlc", "agent-harness", "project-management", "mcp",
+    "session", "multi-agent", "collaboration", "claude-code"
+  ]
+}
