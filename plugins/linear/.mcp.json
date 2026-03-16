@@ -3,7 +3,12 @@
     "linear": {
       "type": "http",
       "url": "https://mcp.linear.app/mcp",
-      "headersHelper": "${CLAUDE_PLUGIN_ROOT}/bin/get-headers.sh"
+      "headers": {
+        "Authorization": "Bearer ${LINEAR_API_KEY}"
+      },
+      "oauth": {
+        "authServerMetadataUrl": "https://invalid.example.com/.well-known/openid-configuration"
+      }
     }
   }
 }
