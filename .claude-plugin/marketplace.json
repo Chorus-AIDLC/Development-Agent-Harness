@@ -8,7 +8,7 @@
   },
   "plugins": [
     {
-      "name": "linear-development-harness",
+      "name": "linear",
       "source": "./plugins/linear",
       "description": "AI-DLC development harness for Linear. Automates session lifecycle, provides Claude Code hooks for PM/Developer/Admin workflows, and enables multi-agent team observability on Linear.",
       "version": "0.1.0",

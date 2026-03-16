@@ -1,4 +1,4 @@
-# @chorus-aidlc/development-harness
+# @chorus-aidlc/development-agent-harness
 
 AI-DLC development harness collection. Brings the AI-Driven Development Lifecycle (Idea → Proposal → Task → Execute → Verify → Done) to popular project management platforms via Claude Code plugins.
 
@@ -8,20 +8,23 @@ AI-DLC development harness collection. Brings the AI-Driven Development Lifecycl
 |--------|----------|--------|
 | [linear](plugins/linear/) | [Linear](https://linear.app) | v0.1.0 |
 
-## Usage
-
-Each plugin is a self-contained Claude Code plugin. Point `--plugin-dir` at the specific plugin folder:
+## Install
 
 ```bash
+# 1. Add the marketplace
+claude /plugin marketplace add Chorus-AIDLC/Development-Agent-Harness
+
+# 2. Install the Linear plugin
+claude /plugin install linear@development-agent-harness
+
+# 3. Set your Linear API key
 export LINEAR_API_KEY="lin_api_xxx"
-cd your-project
-claude --plugin-dir /path/to/development-harness/plugins/linear
 ```
 
 ## Structure
 
 ```
-.claude-plugin/     # Repository-level marketplace manifest
+.claude-plugin/     # Marketplace manifest
 plugins/
   linear/           # Linear platform plugin
     .claude-plugin/ # Plugin manifest
