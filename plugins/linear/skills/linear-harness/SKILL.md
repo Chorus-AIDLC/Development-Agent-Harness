@@ -4,7 +4,7 @@
 
 The Linear Development Harness (`@chorus-aidlc/linear-development-harness`) is a Claude Code plugin that brings the **AI-DLC (AI-Driven Development Lifecycle)** workflow to Linear. It enables multiple AI Agents and humans to collaborate through a structured pipeline — Idea, Proposal, Task, Execute, Verify, Done — using Linear as the single source of truth for project management.
 
-The plugin uses the **official Linear MCP server** (`https://mcp.linear.app/mcp`) for core operations, plus `bin/linear-extra.sh` CLI for advanced features (issue relations, cycles, initiatives, bulk operations). Agent sessions are managed locally via `.linear-harness/` state files, with key events posted as Issue Comments for visibility.
+The plugin uses the **@calltelemetry/linear-mcp** server for all Linear operations — including issue relations, cycles, initiatives, and bulk operations. Agent sessions are managed locally via `.linear-harness/` state files, with key events posted as Issue Comments for visibility.
 
 Core philosophy: **"Reversed Conversation"** — AI proposes, humans verify.
 
@@ -45,15 +45,15 @@ All agents share the same official Linear MCP tools. Role differentiation comes 
 
 ## Shared Linear MCP Tools
 
-All agents connect to the official Linear MCP server at `https://mcp.linear.app/mcp`. Available tool categories:
+All agents connect to the @calltelemetry/linear-mcp server. Available tool categories:
 
-- **Query**: `list_issues`, `list_projects`, `list_teams`, `list_users`, `list_documents`, `list_cycles`, `list_comments`, `list_issue_labels`, `list_issue_statuses`, `list_project_labels`
-- **Read**: `get_issue`, `get_project`, `get_team`, `get_user`, `get_document`, `get_issue_status`
-- **Create**: `create_issue`, `create_project`, `create_comment`, `create_issue_label`
-- **Update**: `update_issue`, `update_project`
-- **Search**: `search_documentation`
-
-For operations not covered by the official MCP (issue relations, cycle management, bulk operations), use `bin/linear-extra.sh` — a CLI tool that wraps GraphQL calls and automatically uses `LINEAR_API_KEY` from environment.
+- **Query**: `search_issues`, `get_projects`, `get_teams`, `get_users`, `get_documents`, `get_cycles`, `get_comments`, `get_labels`, `get_workflow_states`, `get_project_labels`
+- **Read**: `get_issue`, `get_user`, `get_document`
+- **Create**: `create_issue`, `create_project`, `create_comment`, `create_label`, `create_document`, `create_cycle`, `create_initiative`
+- **Update**: `update_issue`, `update_project`, `update_issue_batch`
+- **Search**: `search_documents`
+- **Relations**: `create_issue_relation`, `get_issue_relations`, `delete_issue_relation`
+- **Other**: `get_initiatives`, `get_notifications`, `mark_notification_read`, `archive_issue`, `delete_issue`
 
 ## Label Conventions
 
@@ -104,7 +104,7 @@ This approach gives full observability in Linear while keeping session managemen
 
 1. **Setup**: Configure your Linear API key and MCP connection (see `references/01-setup.md`)
 2. **Bootstrap**: Run `bin/bootstrap.sh` to create `harness:*` labels in your workspace
-3. **Check in**: Verify connectivity by calling `list_teams`
+3. **Check in**: Verify connectivity by calling `get_teams`
 4. **Follow your role workflow**:
    - PM Agent: `references/02-pm-workflow.md`
    - Developer Agent: `references/03-developer-workflow.md`
@@ -112,7 +112,7 @@ This approach gives full observability in Linear while keeping session managemen
 
 ## Execution Rules
 
-1. **Always check viewer info first.** Call `list_teams` or `get_user` to confirm your identity and workspace context before starting any workflow.
+1. **Always check viewer info first.** Call `get_teams` or `get_user` to confirm your identity and workspace context before starting any workflow.
 
 2. **Use label conventions — never skip `harness:*` labels.** Every AI-DLC state transition must be accompanied by the correct label change. Labels are the primary mechanism for filtering and tracking workflow state.
 
@@ -126,11 +126,11 @@ This approach gives full observability in Linear while keeping session managemen
 
 7. **Link CC tasks to Linear issues with `linear:issue:<identifier>` in description.** This enables the plugin to correlate Claude Code task execution with Linear issue tracking.
 
-8. **Use blocking/blocked-by relations for task DAGs.** Issue relations define execution order. Never start a task that has unresolved blocking relations. Use `bash bin/linear-extra.sh relation create` to set relations.
+8. **Use blocking/blocked-by relations for task DAGs.** Issue relations define execution order. Never start a task that has unresolved blocking relations. Use `create_issue_relation` to set relations.
 
-9. **Leverage Cycles for sprint planning.** Assign approved tasks to Cycles to organize work into time-boxed iterations.
+9. **Leverage Cycles for sprint planning.** Assign approved tasks to Cycles to organize work into time-boxed iterations. Use `create_cycle` and `get_cycles` for cycle management.
 
-10. **Use Initiatives for strategic goal tracking.** Group related Projects under Initiatives for portfolio-level visibility.
+10. **Use Initiatives for strategic goal tracking.** Group related Projects under Initiatives for portfolio-level visibility. Use `create_initiative` and `get_initiatives` for initiative management.
 
 ## Reference Documents
 

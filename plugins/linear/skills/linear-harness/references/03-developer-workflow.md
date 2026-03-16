@@ -8,9 +8,9 @@ The Developer Agent claims tasks, implements the work, self-checks acceptance cr
 
 Before starting, ensure you have:
 1. Completed setup (`references/01-setup.md`)
-2. Cached label UUIDs by calling `list_issue_labels()` — you will need UUIDs for `harness:dev`, `harness:admin`, `harness:agent`
-3. Cached workflow state UUIDs by calling `list_issue_statuses({ teamId: "..." })`
-4. Identified your own user/agent UUID via `list_users()`
+2. Cached label UUIDs by calling `get_labels()` — you will need UUIDs for `harness:dev`, `harness:admin`, `harness:agent`
+3. Cached workflow state UUIDs by calling `get_workflow_states({ teamId: "..." })`
+4. Identified your own user/agent UUID via `get_users()`
 
 ---
 
@@ -19,7 +19,7 @@ Before starting, ensure you have:
 Search for tasks that are ready to be claimed:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "Todo"
 })
@@ -30,7 +30,7 @@ Filter for issues with the `harness:dev` label that have no assignee. These are 
 You can also look for tasks with specific priority:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "Todo",
   labelIds: ["harness-dev-label-uuid"]
@@ -110,13 +110,13 @@ get_issue({ issueId: "ENG-200" })
 ### 5.3: Read Comments for Additional Context
 
 ```
-list_comments({ issueId: "ENG-201" })
+get_comments({ issueId: "ENG-201" })
 ```
 
 Also read comments on the parent proposal and the original idea for full history:
 
 ```
-list_comments({ issueId: "ENG-200" })
+get_comments({ issueId: "ENG-200" })
 ```
 
 ### 5.4: Read PRD Document
@@ -132,7 +132,7 @@ get_document({ documentId: "document-uuid" })
 List other sub-issues under the same proposal to understand the broader scope:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   parentId: "proposal-issue-uuid"
 })
@@ -259,7 +259,7 @@ If the Admin reopens the task (moves back to In Progress with feedback):
 ### 9.1: Read Feedback
 
 ```
-list_comments({ issueId: "ENG-201" })
+get_comments({ issueId: "ENG-201" })
 ```
 
 Look for the Admin's verification comment, which will contain specific feedback.

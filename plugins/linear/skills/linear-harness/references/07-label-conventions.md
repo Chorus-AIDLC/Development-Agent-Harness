@@ -95,7 +95,7 @@ Admin reopens
 Any issue assigned to an AI agent must have the `harness:agent` label. This enables workspace-wide filtering to see all agent work:
 
 ```
-list_issues({ labelIds: ["harness-agent-label-uuid"] })
+search_issues({ labelIds: ["harness-agent-label-uuid"] })
 ```
 
 ### Role Labels Are Permanent

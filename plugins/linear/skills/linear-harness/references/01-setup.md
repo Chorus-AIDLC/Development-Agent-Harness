@@ -49,10 +49,10 @@ The `${LINEAR_API_KEY}` variable is resolved from your environment at runtime.
 
 ## Step 4: Verify Connection
 
-Call `list_teams` to confirm the MCP connection works:
+Call `get_teams` to confirm the MCP connection works:
 
 ```
-list_teams()
+get_teams()
 ```
 
 You should see your workspace teams with their UUIDs, keys, and names. If you get an authentication error, verify your `LINEAR_API_KEY` is set correctly.
@@ -83,7 +83,7 @@ The script is idempotent — running it multiple times will not create duplicate
 Confirm labels were created:
 
 ```
-list_issue_labels()
+get_labels()
 ```
 
 You should see all `harness:*` labels in the output. Note down the UUIDs — you will need them when filtering issues by label.
@@ -93,7 +93,7 @@ You should see all `harness:*` labels in the output. Note down the UUIDs — you
 Check that your team has the required workflow states:
 
 ```
-list_issue_statuses({ teamId: "your-team-uuid" })
+get_workflow_states({ teamId: "your-team-uuid" })
 ```
 
 Expected states: Triage, Backlog, Todo, In Progress, In Review, Done, Canceled.

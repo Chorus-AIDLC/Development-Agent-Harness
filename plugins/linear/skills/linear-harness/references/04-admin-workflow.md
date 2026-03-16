@@ -8,9 +8,9 @@ The Admin Agent reviews proposals, approves or rejects them, verifies completed 
 
 Before starting, ensure you have:
 1. Completed setup (`references/01-setup.md`)
-2. Cached label UUIDs by calling `list_issue_labels()` — you will need UUIDs for `harness:proposal`, `harness:approved`, `harness:rejected`, `harness:admin`, `harness:dev`, `harness:agent`
-3. Cached workflow state UUIDs by calling `list_issue_statuses({ teamId: "..." })`
-4. Identified your own user/agent UUID via `list_users()`
+2. Cached label UUIDs by calling `get_labels()` — you will need UUIDs for `harness:proposal`, `harness:approved`, `harness:rejected`, `harness:admin`, `harness:dev`, `harness:agent`
+3. Cached workflow state UUIDs by calling `get_workflow_states({ teamId: "..." })`
+4. Identified your own user/agent UUID via `get_users()`
 
 ---
 
@@ -21,7 +21,7 @@ Before starting, ensure you have:
 Search for proposals awaiting review:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "In Review",
   labelIds: ["harness-proposal-label-uuid", "harness-admin-label-uuid"]
@@ -41,7 +41,7 @@ get_issue({ issueId: "ENG-101" })
 Find and read the linked document:
 
 ```
-list_documents({ projectId: "project-uuid" })
+get_documents({ projectId: "project-uuid" })
 get_document({ documentId: "prd-document-uuid" })
 ```
 
@@ -50,7 +50,7 @@ get_document({ documentId: "prd-document-uuid" })
 List all task sub-issues under the Parent Issue:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   parentId: "ENG-101-uuid"
 })
@@ -123,10 +123,13 @@ update_issue({ issueId: "task-3-uuid", status: "Todo" })
 update_issue({ issueId: "task-4-uuid", status: "Todo" })
 ```
 
-For many tasks, use the bulk move script for efficiency:
+For many tasks, use batch update for efficiency:
 
-```bash
-bash bin/linear-extra.sh bulk-move-status "<todo-state-id>" "task-1-uuid" "task-2-uuid" "task-3-uuid" "task-4-uuid"
+```
+update_issue_batch({
+  issueIds: ["task-1-uuid", "task-2-uuid", "task-3-uuid", "task-4-uuid"],
+  status: "Todo"
+})
 ```
 
 ### A.7b: Reject the Proposal
@@ -157,7 +160,7 @@ create_comment({
 ### B.1: Find Tasks Pending Verification
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "In Review",
   labelIds: ["harness-admin-label-uuid"]
@@ -179,7 +182,7 @@ get_issue({ issueId: "ENG-201" })
 Read comments to see the developer's progress trail and self-check:
 
 ```
-list_comments({ issueId: "ENG-201" })
+get_comments({ issueId: "ENG-201" })
 ```
 
 Look for:
@@ -259,24 +262,32 @@ create_project({
 
 Create a new sprint cycle:
 
-```bash
-bash bin/linear-extra.sh cycle create "<teamId>" "Sprint 12" "2026-03-16" "2026-03-30"
+```
+create_cycle({
+  teamId: "team-uuid",
+  name: "Sprint 12",
+  startsAt: "2026-03-16",
+  endsAt: "2026-03-30"
+})
 ```
 
 List existing cycles and assign tasks:
 
-```bash
-bash bin/linear-extra.sh cycle list "<teamId>"
-bash bin/linear-extra.sh cycle assign "<issueId>" "<cycleId>"
+```
+get_cycles({ teamId: "team-uuid" })
+update_issue({ issueId: "issue-uuid", cycleId: "cycle-uuid" })
 ```
 
 ### C.3: Manage Initiatives
 
 Create strategic initiatives:
 
-```bash
-bash bin/linear-extra.sh initiative create "Platform Reliability" "Improve platform reliability to 99.99% uptime"
-bash bin/linear-extra.sh initiative list
+```
+create_initiative({
+  name: "Platform Reliability",
+  description: "Improve platform reliability to 99.99% uptime"
+})
+get_initiatives()
 ```
 
 ### C.4: Close and Archive
@@ -308,7 +319,7 @@ Follow this sequence each day for effective admin oversight:
 ### 1. Check Pending Proposals
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   labelIds: ["harness-proposal-label-uuid", "harness-admin-label-uuid"]
 })
@@ -319,7 +330,7 @@ Review and approve or reject each proposal (Workflow A).
 ### 2. Check Tasks for Verification
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "In Review",
   labelIds: ["harness-admin-label-uuid"]
@@ -331,7 +342,7 @@ Verify or reopen each task (Workflow B).
 ### 3. Review In-Progress Work
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "In Progress"
 })
@@ -342,7 +353,7 @@ Scan for stale tasks (no recent comments), blockers, or issues needing attention
 ### 4. Review Project Health
 
 ```
-list_projects({ teamId: "team-uuid" })
+get_projects({ teamId: "team-uuid" })
 ```
 
 For each active project, check progress against cycle deadlines.
@@ -350,7 +361,7 @@ For each active project, check progress against cycle deadlines.
 ### 5. Check for Unassigned Tasks
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "Todo"
 })

@@ -39,7 +39,7 @@ Team Lead (Claude Code)
 The Team Lead reads the Linear project state:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "Todo",
   labelIds: ["harness-dev-label-uuid"]
@@ -105,7 +105,7 @@ When a sub-agent finishes (or is stopped), the `SubagentStop` hook:
 After Wave 1 sub-agents complete, the Team Lead checks for newly unblocked tasks:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "Todo"
 })
@@ -174,7 +174,7 @@ Multiple sub-agents may discover the same unassigned task. The plugin's atomic f
 Since sessions are local, the Issue Comment trail is the primary observability mechanism. The Team Lead can check progress by reading comments:
 
 ```
-list_comments({ issueId: "ENG-201" })
+get_comments({ issueId: "ENG-201" })
 ```
 
 ---
@@ -192,7 +192,7 @@ list_comments({ issueId: "ENG-201" })
 
 ### Labels Missing
 
-**Symptom**: `list_issue_labels` does not show `harness:*` labels.
+**Symptom**: `get_labels` does not show `harness:*` labels.
 
 **Fix**: Run `bin/bootstrap.sh` to create all harness labels. The script is idempotent.
 
@@ -201,7 +201,7 @@ list_comments({ issueId: "ENG-201" })
 **Symptom**: `update_issue` with a status name fails.
 
 **Causes and fixes**:
-- Workflow state does not exist: Call `list_issue_statuses({ teamId: "..." })` to see available states
+- Workflow state does not exist: Call `get_workflow_states({ teamId: "..." })` to see available states
 - "In Review" not configured: Add it manually in Linear team workflow settings
 - Using state name instead of ID: Some API calls require the state UUID, not the name
 

@@ -10,9 +10,9 @@ The PM Agent is responsible for discovering ideas, elaborating requirements thro
 
 Before starting, ensure you have:
 1. Completed setup (`references/01-setup.md`)
-2. Cached label UUIDs by calling `list_issue_labels()` — you will need UUIDs for `harness:idea`, `harness:elaborating`, `harness:proposal`, `harness:pm`, `harness:admin`, `harness:agent`
-3. Cached workflow state UUIDs by calling `list_issue_statuses({ teamId: "..." })`
-4. Identified your own user/agent UUID via `list_users()`
+2. Cached label UUIDs by calling `get_labels()` — you will need UUIDs for `harness:idea`, `harness:elaborating`, `harness:proposal`, `harness:pm`, `harness:admin`, `harness:agent`
+3. Cached workflow state UUIDs by calling `get_workflow_states({ teamId: "..." })`
+4. Identified your own user/agent UUID via `get_users()`
 
 ---
 
@@ -23,7 +23,7 @@ Before starting, ensure you have:
 Search for issues in Triage with the `harness:idea` label:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "Triage",
   labelIds: ["harness-idea-label-uuid"]
@@ -98,7 +98,7 @@ create_comment({
 Poll for new comments periodically:
 
 ```
-list_comments({ issueId: "ENG-101" })
+get_comments({ issueId: "ENG-101" })
 ```
 
 Review each new comment for answers to your questions. If answers are incomplete, post follow-up questions:
@@ -211,23 +211,23 @@ create_issue({
 
 ### Step 3.4: Set Task Dependencies (DAG)
 
-Use `bin/linear-extra.sh` to create blocking relations between tasks:
+Use `create_issue_relation` to create blocking relations between tasks:
 
-```bash
+```
 # Task 1 blocks Task 2 (LDAP depends on Salesforce)
-bash bin/linear-extra.sh relation create "task-1-uuid" blocks "task-2-uuid"
+create_issue_relation({ issueId: "task-1-uuid", relatedIssueId: "task-2-uuid", type: "blocks" })
 
 # Task 1 and Task 2 both block Task 3 (Rules Engine depends on both)
-bash bin/linear-extra.sh relation create "task-1-uuid" blocks "task-3-uuid"
-bash bin/linear-extra.sh relation create "task-2-uuid" blocks "task-3-uuid"
+create_issue_relation({ issueId: "task-1-uuid", relatedIssueId: "task-3-uuid", type: "blocks" })
+create_issue_relation({ issueId: "task-2-uuid", relatedIssueId: "task-3-uuid", type: "blocks" })
 
 # Task 3 blocks Task 4 (Dashboard depends on Rules Engine)
-bash bin/linear-extra.sh relation create "task-3-uuid" blocks "task-4-uuid"
+create_issue_relation({ issueId: "task-3-uuid", relatedIssueId: "task-4-uuid", type: "blocks" })
 ```
 
 Verify the DAG:
-```bash
-bash bin/linear-extra.sh relation list "task-3-uuid"
+```
+get_issue_relations({ issueId: "task-3-uuid" })
 ```
 
 This creates the DAG: Task 1 -> Task 2 -> Task 3 -> Task 4 (with Task 3 also depending on Task 1).
@@ -279,9 +279,9 @@ update_issue({ issueId: "task-4-uuid", cycleId: "active-cycle-uuid" })
 ### Step 5.2: Link to Initiative
 
 If the proposal belongs to a strategic initiative:
-```bash
-bash bin/linear-extra.sh initiative list
-# then link project to initiative via Linear UI or GraphQL
+```
+get_initiatives()
+# then link project to initiative via Linear UI or API
 ```
 
 ### Step 5.3: Monitor Progress
@@ -289,7 +289,7 @@ bash bin/linear-extra.sh initiative list
 Periodically check task status:
 
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   projectId: "project-uuid"
 })
@@ -298,7 +298,7 @@ list_issues({
 Review comments on in-progress tasks to stay informed:
 
 ```
-list_comments({ issueId: "task-uuid" })
+get_comments({ issueId: "task-uuid" })
 ```
 
 ---

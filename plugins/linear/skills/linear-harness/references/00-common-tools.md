@@ -1,14 +1,14 @@
-# Common Tools Reference — Official Linear MCP
+# Common Tools Reference — @calltelemetry/linear-mcp
 
-All agents share the same set of tools provided by the official Linear MCP server at `https://mcp.linear.app/mcp`. This document covers every available tool, its parameters, and usage examples.
+All agents share the same set of tools provided by the @calltelemetry/linear-mcp server. This document covers every available tool, its parameters, and usage examples.
 
 ---
 
 ## Query Tools
 
-### `list_issues`
+### `search_issues`
 
-List and filter issues across your workspace.
+Search and filter issues across your workspace.
 
 **Key Parameters:**
 - `teamId` (string, optional) — Filter by team UUID
@@ -20,7 +20,7 @@ List and filter issues across your workspace.
 
 **Example — Find unassigned ideas:**
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "Triage",
   labelIds: ["harness-idea-label-uuid"]
@@ -29,13 +29,13 @@ list_issues({
 
 **Example — Find tasks ready for work:**
 ```
-list_issues({
+search_issues({
   teamId: "team-uuid",
   status: "Todo"
 })
 ```
 
-### `list_projects`
+### `get_projects`
 
 List projects in the workspace.
 
@@ -44,10 +44,10 @@ List projects in the workspace.
 
 **Example:**
 ```
-list_projects({ teamId: "team-uuid" })
+get_projects({ teamId: "team-uuid" })
 ```
 
-### `list_teams`
+### `get_teams`
 
 Get all teams in the workspace. Call this first to discover team UUIDs.
 
@@ -55,10 +55,10 @@ Get all teams in the workspace. Call this first to discover team UUIDs.
 
 **Example:**
 ```
-list_teams()
+get_teams()
 ```
 
-### `list_users`
+### `get_users`
 
 Get all workspace members.
 
@@ -66,10 +66,10 @@ Get all workspace members.
 
 **Example:**
 ```
-list_users()
+get_users()
 ```
 
-### `list_documents`
+### `get_documents`
 
 List documents in the workspace.
 
@@ -78,10 +78,10 @@ List documents in the workspace.
 
 **Example:**
 ```
-list_documents({ projectId: "project-uuid" })
+get_documents({ projectId: "project-uuid" })
 ```
 
-### `list_cycles`
+### `get_cycles`
 
 List cycles for a team.
 
@@ -90,10 +90,10 @@ List cycles for a team.
 
 **Example:**
 ```
-list_cycles({ teamId: "team-uuid" })
+get_cycles({ teamId: "team-uuid" })
 ```
 
-### `list_comments`
+### `get_comments`
 
 List comments on an issue. Essential for reading elaboration threads.
 
@@ -102,10 +102,10 @@ List comments on an issue. Essential for reading elaboration threads.
 
 **Example:**
 ```
-list_comments({ issueId: "issue-uuid" })
+get_comments({ issueId: "issue-uuid" })
 ```
 
-### `list_issue_labels`
+### `get_labels`
 
 List all labels in the workspace. Use this to find `harness:*` label UUIDs.
 
@@ -113,10 +113,10 @@ List all labels in the workspace. Use this to find `harness:*` label UUIDs.
 
 **Example:**
 ```
-list_issue_labels()
+get_labels()
 ```
 
-### `list_issue_statuses`
+### `get_workflow_states`
 
 List workflow states for a team. Use this to discover state UUIDs for status transitions.
 
@@ -125,10 +125,10 @@ List workflow states for a team. Use this to discover state UUIDs for status tra
 
 **Example:**
 ```
-list_issue_statuses({ teamId: "team-uuid" })
+get_workflow_states({ teamId: "team-uuid" })
 ```
 
-### `list_project_labels`
+### `get_project_labels`
 
 List project-level labels.
 
@@ -152,20 +152,6 @@ get_issue({ issueId: "ENG-123" })
 
 **Returns:** Title, description, status, priority, assignee, labels, parent issue, sub-issues, relations (blocking/blocked-by), comments, and more.
 
-### `get_project`
-
-Get project details including description, status, and associated teams.
-
-**Key Parameters:**
-- `projectId` (string, required) — Project UUID
-
-### `get_team`
-
-Get team information including key, name, and workflow settings.
-
-**Key Parameters:**
-- `teamId` (string, required) — Team UUID
-
 ### `get_user`
 
 Get user information. Useful for resolving assignee details.
@@ -179,13 +165,6 @@ Get document content. Used to read PRDs linked to proposals.
 
 **Key Parameters:**
 - `documentId` (string, required) — Document UUID
-
-### `get_issue_status`
-
-Get details about a specific workflow state.
-
-**Key Parameters:**
-- `statusId` (string, required) — Status UUID
 
 ---
 
@@ -263,7 +242,7 @@ create_comment({
 })
 ```
 
-### `create_issue_label`
+### `create_label`
 
 Create a new label. Used by `bin/bootstrap.sh` to set up `harness:*` labels.
 
@@ -271,6 +250,51 @@ Create a new label. Used by `bin/bootstrap.sh` to set up `harness:*` labels.
 - `name` (string, required) — Label name (e.g., "harness:idea")
 - `color` (string, optional) — Hex color code
 - `description` (string, optional) — Label description
+
+### `create_document`
+
+Create a new document. Used for PRDs linked to proposals.
+
+**Key Parameters:**
+- `title` (string, required) — Document title
+- `content` (string, required) — Document content in Markdown
+- `projectId` (string, optional) — Associated project UUID
+
+### `create_cycle`
+
+Create a new sprint cycle.
+
+**Key Parameters:**
+- `teamId` (string, required) — Team UUID
+- `name` (string, required) — Cycle name (e.g., "Sprint 12")
+- `startsAt` (string, required) — Start date (ISO 8601)
+- `endsAt` (string, required) — End date (ISO 8601)
+
+**Example:**
+```
+create_cycle({
+  teamId: "team-uuid",
+  name: "Sprint 12",
+  startsAt: "2026-03-16",
+  endsAt: "2026-03-30"
+})
+```
+
+### `create_initiative`
+
+Create a strategic initiative.
+
+**Key Parameters:**
+- `name` (string, required) — Initiative name
+- `description` (string, optional) — Initiative description
+
+**Example:**
+```
+create_initiative({
+  name: "Q2 Platform Modernization",
+  description: "Strategic initiative for platform upgrades"
+})
+```
 
 ---
 
@@ -320,87 +344,124 @@ Update project fields.
 - `description` (string, optional) — New description
 - `status` (string, optional) — Project status
 
+### `update_issue_batch`
+
+Update multiple issues at once. Useful for bulk status transitions (e.g., moving all approved tasks to Todo).
+
+**Key Parameters:**
+- `issueIds` (string[], required) — List of issue UUIDs
+- `status` (string, optional) — New workflow state
+- Other fields as supported
+
+**Example — Bulk move to Todo:**
+```
+update_issue_batch({
+  issueIds: ["task-1-uuid", "task-2-uuid", "task-3-uuid", "task-4-uuid"],
+  status: "Todo"
+})
+```
+
 ---
 
 ## Search
 
-### `search_documentation`
+### `search_documents`
 
-Search Linear's documentation and help articles.
+Search Linear documents.
 
 **Key Parameters:**
 - `query` (string, required) — Search query
 
 ---
 
-## Extra CLI Tools (`bin/linear-extra.sh`)
+## Issue Relations
 
-For operations not available in the official MCP, use `bin/linear-extra.sh`. It automatically reads `LINEAR_API_KEY` from the environment — no manual auth needed.
+Manage blocking/blocked-by relationships between issues to form task DAGs.
 
-### Issue Relations (Blocking/Blocked-by)
+### `create_issue_relation`
 
-Create dependency relationships between issues to form task DAGs:
+Create a dependency relationship between two issues.
 
-```bash
-# Create: issueA blocks issueB
-bash bin/linear-extra.sh relation create "<issueId-A>" blocks "<issueId-B>"
+**Key Parameters:**
+- `issueId` (string, required) — Source issue UUID
+- `relatedIssueId` (string, required) — Target issue UUID
+- `type` (string, required) — Relation type: "blocks", "blocked-by", "related", "duplicate"
 
-# Also supports: blocked-by, related, duplicate
-bash bin/linear-extra.sh relation create "<issueId>" blocked-by "<blockerId>"
-
-# List all relations for an issue
-bash bin/linear-extra.sh relation list "<issueId>"
-
-# Delete a relation
-bash bin/linear-extra.sh relation delete "<relationId>"
+**Example — issueA blocks issueB:**
+```
+create_issue_relation({
+  issueId: "issueA-uuid",
+  relatedIssueId: "issueB-uuid",
+  type: "blocks"
+})
 ```
 
-### Cycle Management
+### `get_issue_relations`
 
-```bash
-# Create a cycle
-bash bin/linear-extra.sh cycle create "<teamId>" "Sprint 5" "2026-03-16" "2026-03-30"
+List all relations for an issue.
 
-# List cycles for a team
-bash bin/linear-extra.sh cycle list "<teamId>"
+**Key Parameters:**
+- `issueId` (string, required) — Issue UUID
 
-# Assign an issue to a cycle
-bash bin/linear-extra.sh cycle assign "<issueId>" "<cycleId>"
-
-# Remove issue from its cycle
-bash bin/linear-extra.sh cycle remove "<issueId>"
+**Example:**
+```
+get_issue_relations({ issueId: "issue-uuid" })
 ```
 
-### Initiative Management
+### `delete_issue_relation`
 
-```bash
-# Create an initiative
-bash bin/linear-extra.sh initiative create "Q2 Platform Modernization" "Strategic initiative for platform upgrades"
+Delete an existing relation.
 
-# List all initiatives
-bash bin/linear-extra.sh initiative list
+**Key Parameters:**
+- `relationId` (string, required) — Relation UUID
+
+**Example:**
+```
+delete_issue_relation({ relationId: "relation-uuid" })
 ```
 
-### Bulk Operations
+---
 
-Move multiple issues to the same status in one call:
+## Initiative Management
 
-```bash
-# Get the state ID first
-bash bin/linear-extra.sh states "<teamId>"
+### `get_initiatives`
 
-# Bulk move to Todo
-bash bin/linear-extra.sh bulk-move-status "<todo-state-id>" "<issueId-1>" "<issueId-2>" "<issueId-3>"
+List all initiatives.
+
+**Example:**
+```
+get_initiatives()
 ```
 
-This is particularly useful when approving a proposal and moving all sub-issues from Backlog to Todo.
+---
 
-### Utility Commands
+## Notifications
 
-```bash
-# Get current viewer info
-bash bin/linear-extra.sh viewer
+### `get_notifications`
 
-# List workflow states for a team
-bash bin/linear-extra.sh states "<teamId>"
-```
+Get notifications for the authenticated user.
+
+### `mark_notification_read`
+
+Mark a notification as read.
+
+**Key Parameters:**
+- `notificationId` (string, required) — Notification UUID
+
+---
+
+## Issue Lifecycle
+
+### `archive_issue`
+
+Archive an issue.
+
+**Key Parameters:**
+- `issueId` (string, required) — Issue UUID
+
+### `delete_issue`
+
+Permanently delete an issue.
+
+**Key Parameters:**
+- `issueId` (string, required) — Issue UUID
