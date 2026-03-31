@@ -76,6 +76,45 @@ else
   fi
 fi
 
+# Auto-bootstrap: ensure harness:* labels exist
+# One query to check, only creates missing labels. Idempotent.
+LABEL_RESULT=$("$API" graphql "query { issueLabels(filter: { name: { startsWith: \"harness:\" } }, first: 20) { nodes { name } } }" 2>/dev/null) || true
+if command -v jq &>/dev/null && [ -n "$LABEL_RESULT" ]; then
+  EXISTING_LABELS=$(echo "$LABEL_RESULT" | jq -r '.data.issueLabels.nodes[].name' 2>/dev/null) || true
+
+  # Use first team for label creation
+  BOOTSTRAP_TEAM="${LINEAR_TEAM_ID:-${FIRST_TEAM_ID}}"
+
+  if [ -n "$BOOTSTRAP_TEAM" ]; then
+    create_label_if_missing() {
+      local name="$1" color="$2"
+      if ! echo "$EXISTING_LABELS" | grep -qx "$name" 2>/dev/null; then
+        # Bypass linear_graphql to avoid jq --arg escaping '!' in GraphQL non-null types
+        local body
+        body=$(jq -n \
+          --arg n "$name" --arg c "$color" --arg t "$BOOTSTRAP_TEAM" \
+          '{"query": "mutation { issueLabelCreate(input: { name: \($n | @json), color: \($c | @json), teamId: \($t | @json) }) { success } }"}')
+        curl -s -X POST \
+          -H "Authorization: ${LINEAR_API_KEY}" \
+          -H "Content-Type: application/json" \
+          -d "$body" \
+          "https://api.linear.app/graphql" >/dev/null 2>&1 || true
+      fi
+    }
+
+    create_label_if_missing "harness:idea"        "#7C3AED"
+    create_label_if_missing "harness:elaborating"  "#F59E0B"
+    create_label_if_missing "harness:proposal"     "#3B82F6"
+    create_label_if_missing "harness:approved"     "#10B981"
+    create_label_if_missing "harness:rejected"     "#EF4444"
+    create_label_if_missing "harness:pm"           "#8B5CF6"
+    create_label_if_missing "harness:dev"          "#06B6D4"
+    create_label_if_missing "harness:admin"        "#F97316"
+    create_label_if_missing "harness:agent"        "#6366F1"
+    create_label_if_missing "harness:ac-passed"    "#14B8A6"
+  fi
+fi
+
 # Check for existing session files (resumed session)
 SESSIONS_DIR="${CLAUDE_PROJECT_DIR:-.}/.linear-harness/sessions"
 SESSION_INFO=""

@@ -1,47 +1,38 @@
-# Linear Development Harness — Skill Overview
+# Linear Development Harness — Core Skill
 
-## What is the Linear Development Harness?
+The Linear Development Harness brings the **AI-DLC (AI-Driven Development Lifecycle)** workflow to [Linear](https://linear.app). It is part of the [Chorus AI-DLC](https://github.com/Chorus-AIDLC/Chorus) ecosystem — a collaboration platform for AI Agents and humans.
 
-The Linear Development Harness (`@chorus-aidlc/linear-development-harness`) is a Claude Code plugin that brings the **AI-DLC (AI-Driven Development Lifecycle)** workflow to Linear. It enables multiple AI Agents and humans to collaborate through a structured pipeline — Idea, Proposal, Task, Execute, Verify, Done — using Linear as the single source of truth for project management.
+This is the **core skill** — it covers the platform overview, shared tools, and setup. For stage-specific workflows, use the dedicated skills listed in [Skill Routing](#skill-routing).
 
-The plugin uses the **@calltelemetry/linear-mcp** server for all Linear operations — including issue relations, cycles, initiatives, and bulk operations. Agent sessions are managed locally via `.linear-harness/` state files, with key events posted as Issue Comments for visibility.
-
-Core philosophy: **"Reversed Conversation"** — AI proposes, humans verify.
+---
 
 ## AI-DLC Workflow on Linear
 
 The workflow uses a **single Parent Issue** as the container for the entire lifecycle — from Idea through Proposal to completion. Labels on this Parent Issue track the current phase. Tasks are Sub-issues; PRDs are Documents.
 
 ```
-[Parent Issue] harness:idea  (Triage)
-  |
-  v  PM claims, posts elaboration questions as Comments
-[Parent Issue] harness:elaborating
-  |
-  v  PM creates PRD Document + Task Sub-issues + DAG
-[Parent Issue] harness:proposal  (In Review)
-  |
-  v  Admin reviews and approves
-[Parent Issue] harness:approved
-  |
-  v  Sub-issues moved to Todo
-[Sub-issues]   Developer claims, In Progress
-  |
-  v  Developer submits for verify
-[Sub-issues]   Admin verifies → Done
+Idea --> Elaboration --> Proposal --> Approval --> Tasks --> Execute --> Verify --> Done
+ ^            ^             ^           ^           ^          ^          ^         ^
+Human      PM Agent      PM Agent    Admin       Admin     Dev Agent    Admin    Admin
+creates    Q&A rounds    PRD+tasks   reviews     activates  codes &    reviews   closes
+           on issue      + DAG       proposal    sub-issues reports    & marks AC
 ```
 
-Each phase maps to a `harness:*` label on the **same Parent Issue**. There is no separate Idea issue and Proposal issue — they are one and the same.
+Core philosophy: **"Reversed Conversation"** — AI proposes, humans verify.
+
+---
 
 ## Three Agent Roles
 
 | Role | Responsibility | Key Labels |
 |------|---------------|------------|
-| **PM Agent** | Discovers ideas, elaborates requirements, creates proposals with tasks and PRDs | `harness:pm` |
+| **PM Agent** | Discovers ideas, runs structured elaboration, creates proposals with tasks and PRDs | `harness:pm` |
 | **Developer Agent** | Claims tasks, implements work, self-checks acceptance criteria, submits for review | `harness:dev` |
-| **Admin Agent** | Reviews proposals, approves/rejects, verifies completed tasks, manages projects and cycles | `harness:admin` |
+| **Admin Agent** | Reviews proposals, approves/rejects, verifies tasks with AC marking, manages projects | `harness:admin` |
 
 All agents share the same official Linear MCP tools. Role differentiation comes from which workflow steps each agent performs and which labels they apply.
+
+---
 
 ## Shared Linear MCP Tools
 
@@ -55,82 +46,152 @@ All agents connect to the @calltelemetry/linear-mcp server. Available tool categ
 - **Relations**: `create_issue_relation`, `get_issue_relations`, `delete_issue_relation`
 - **Other**: `get_initiatives`, `get_notifications`, `mark_notification_read`, `archive_issue`, `delete_issue`
 
+See `references/00-common-tools.md` for full tool reference.
+
+---
+
 ## Label Conventions
 
-The harness uses `harness:*` labels to track AI-DLC state. These labels are workspace-level and visible across all teams.
+The harness uses `harness:*` labels to track AI-DLC state. Labels are workspace-level and visible across all teams.
 
 | Label | Purpose |
 |-------|---------|
 | `harness:idea` | Idea awaiting elaboration |
-| `harness:elaborating` | Under AI elaboration |
-| `harness:proposal` | Proposal pending approval |
-| `harness:approved` | Proposal approved |
-| `harness:rejected` | Proposal rejected |
+| `harness:elaborating` | Under structured elaboration |
+| `harness:proposal` | Proposal submitted for approval |
+| `harness:approved` | Proposal approved (stacked with `harness:proposal`) |
+| `harness:rejected` | Proposal rejected (stacked with `harness:proposal`) |
 | `harness:pm` | PM Agent work item |
 | `harness:dev` | Developer Agent work item |
 | `harness:admin` | Admin review needed |
 | `harness:agent` | Assigned to AI Agent (always present on agent-assigned issues) |
+| `harness:ac-passed` | All acceptance criteria self-checked as passed |
 
-Run `bin/bootstrap.sh` to create all labels automatically. See `references/07-label-conventions.md` for full lifecycle details.
+### Label Stacking Model
+
+Labels are **additive, not replacements**. Key rules:
+
+- `harness:proposal` is an **identity label** — it stays on the Parent Issue permanently once submitted
+- `harness:approved` / `harness:rejected` are **status labels** stacked on top of `harness:proposal`
+- Pending proposals = `harness:proposal` without approved or rejected
+- `harness:pm`, `harness:dev` are **attribution labels** — never removed
+- `harness:admin` is **transient** — added when review needed, removed after review complete
+
+Labels are **auto-created on first session start** — no manual setup needed. See `references/07-label-conventions.md` for full lifecycle details.
+
+---
 
 ## Workflow State Mapping
-
-Each Linear team should have these workflow states configured:
 
 | Linear State | AI-DLC Meaning |
 |-------------|----------------|
 | Triage | Idea (needs elaboration) |
-| Backlog | Elaborated (ready for planning) |
+| Backlog | Draft / Elaborated (building proposal) |
 | Todo | Open (ready for assignment) |
 | In Progress | In progress (agent working) |
 | In Review | Verify (pending admin verification) |
 | Done | Completed and verified |
 | Canceled | Closed |
 
-The "In Review" state may need to be added as a custom state in your team's workflow settings.
+---
 
 ## Session and Observability
 
-Agent sessions are managed **locally** by the plugin, not by Linear:
+Agent sessions are managed **locally** by the plugin:
 
 - `.linear-harness/sessions/` contains session metadata files
 - Plugin hooks (`SubagentStart`, `SubagentStop`, `TeammateIdle`) manage lifecycle automatically
 - Key events are posted as **Issue Comments** for human visibility
 - No server-side session state — purely client-side with a Comment trail
 
-This approach gives full observability in Linear while keeping session management lightweight and self-contained.
-
-## Getting Started
-
-1. **Setup**: Configure your Linear API key and MCP connection (see `references/01-setup.md`)
-2. **Bootstrap**: Run `bin/bootstrap.sh` to create `harness:*` labels in your workspace
-3. **Check in**: Verify connectivity by calling `get_teams`
-4. **Follow your role workflow**:
-   - PM Agent: `references/02-pm-workflow.md`
-   - Developer Agent: `references/03-developer-workflow.md`
-   - Admin Agent: `references/04-admin-workflow.md`
+---
 
 ## Execution Rules
 
-1. **Always check viewer info first.** Call `get_teams` or `get_user` to confirm your identity and workspace context before starting any workflow.
+1. **Always check viewer info first.** Call `get_teams` or `get_user` to confirm your identity and workspace context.
 
-2. **Use label conventions — never skip `harness:*` labels.** Every AI-DLC state transition must be accompanied by the correct label change. Labels are the primary mechanism for filtering and tracking workflow state.
+2. **Use label conventions — never skip `harness:*` labels.** Every AI-DLC state transition must have the correct label change. Labels are the primary filtering mechanism.
 
-3. **A single Parent Issue is both Idea and Proposal.** The same issue starts as `harness:idea`, transitions through `harness:elaborating` and `harness:proposal` to `harness:approved`. Tasks are Sub-issues under it. PRDs are linked Documents.
+3. **A single Parent Issue is both Idea and Proposal.** The same issue transitions through `harness:idea` → `harness:elaborating` → `harness:proposal` → `harness:proposal` + `harness:approved`.
 
-4. **Elaboration uses Comment threads on the Parent Issue.** All elaboration Q&A happens as Comments on the same Parent Issue that will become the Proposal. This keeps context co-located and auditable.
+4. **Labels are additive.** `harness:proposal` stays permanently. `harness:approved` / `harness:rejected` are stacked on top — never remove `harness:proposal` when approving or rejecting.
 
-5. **Acceptance criteria use Markdown checklists.** Task descriptions must include `- [ ]` checklist items. Developers self-check these before submitting for verification.
+5. **Elaboration uses structured Comment threads.** Post questions as structured Markdown with round numbers and categories. Track rounds via local state.
 
-6. **Sessions are auto-managed by plugin hooks.** Do not manually create or destroy sessions. The plugin's `SubagentStart` and `SubagentStop` hooks handle lifecycle. Post Comments for visibility.
+6. **Acceptance criteria use structured Markdown checklists.** Task descriptions must include `- [ ] AC-{n}: {description}` items. Self-check with evidence before submitting.
 
-7. **Link CC tasks to Linear issues with `linear:issue:<identifier>` in description.** This enables the plugin to correlate Claude Code task execution with Linear issue tracking.
+7. **Sessions are auto-managed by plugin hooks.** Do not manually create or destroy sessions.
 
-8. **Use blocking/blocked-by relations for task DAGs.** Issue relations define execution order. Never start a task that has unresolved blocking relations. Use `create_issue_relation` to set relations.
+8. **Link CC tasks to Linear issues with `linear:issue:<identifier>` in description.**
 
-9. **Leverage Cycles for sprint planning.** Assign approved tasks to Cycles to organize work into time-boxed iterations. Use `create_cycle` and `get_cycles` for cycle management.
+9. **Use blocking/blocked-by relations for task DAGs.** Issue relations define execution order. Never start a task with unresolved blockers.
 
-10. **Use Initiatives for strategic goal tracking.** Group related Projects under Initiatives for portfolio-level visibility. Use `create_initiative` and `get_initiatives` for initiative management.
+10. **Leverage Cycles and Initiatives.** Assign tasks to Cycles for sprint planning; group Projects under Initiatives.
+
+---
+
+## Skill Routing
+
+This is the core overview skill. For stage-specific workflows, use:
+
+| Stage | Skill | Description |
+|-------|-------|-------------|
+| **Quick Dev** | `/quick-dev` | Skip Idea→Proposal, create tasks directly, execute, and self-verify |
+| **Ideation** | `/idea` | Claim Ideas, run structured elaboration rounds, prepare for proposal |
+| **Planning** | `/proposal` | Build proposals with PRD + task sub-issues, manage DAG, submit for review |
+| **Development** | `/develop` | Claim Tasks, report work, self-check AC, session & Agent Teams integration |
+| **Review** | `/review` | Approve/reject Proposals, verify Tasks with AC marking, project governance |
+
+### Getting Started
+
+1. Start a session — labels are auto-created on first launch
+2. Based on your role, use the appropriate skill:
+   - PM Agent → `/idea` then `/proposal`
+   - Developer Agent → `/develop`
+   - Admin Agent → `/review` (also has access to all PM and Developer workflows)
+
+---
+
+## Status Lifecycle Reference
+
+### Parent Issue (Idea → Proposal → Approved)
+
+```
+[Triage]  + harness:idea
+    |
+    v  PM claims, starts elaboration
+[Triage]  - harness:idea, + harness:elaborating, + harness:pm, + harness:agent
+    |
+    v  PM completes proposal (PRD + Sub-issues)
+[In Review]  - harness:elaborating, + harness:proposal, + harness:admin
+    |
+    +---> Admin approves: + harness:approved, - harness:admin
+    |
+    +---> Admin rejects: + harness:rejected, - harness:admin
+              |
+              v  PM fixes, resubmits: - harness:rejected, + harness:admin
+```
+
+### Task (Sub-issue)
+
+```
+[Backlog]  + harness:dev                     (created as draft under proposal)
+    |
+    v  Admin approves proposal → moves to Todo
+[Todo]  (no label change)
+    |
+    v  Developer claims
+[In Progress]  + harness:agent
+    |
+    v  Developer self-checks AC, submits
+[In Review]  + harness:admin, + harness:ac-passed (if all AC passed)
+    |
+    +---> Admin verifies: [Done], - harness:admin
+    |
+    +---> Admin reopens: [In Progress], - harness:admin, - harness:ac-passed
+```
+
+---
 
 ## Reference Documents
 
@@ -138,9 +199,6 @@ This approach gives full observability in Linear while keeping session managemen
 |------|---------|
 | `references/00-common-tools.md` | Official Linear MCP tool reference |
 | `references/01-setup.md` | Setup and configuration guide |
-| `references/02-pm-workflow.md` | PM Agent workflow |
-| `references/03-developer-workflow.md` | Developer Agent workflow |
-| `references/04-admin-workflow.md` | Admin Agent workflow |
 | `references/05-session-management.md` | Session lifecycle and observability |
 | `references/06-agent-teams.md` | Claude Code Agent Teams integration |
 | `references/07-label-conventions.md` | Label lifecycle and conventions |

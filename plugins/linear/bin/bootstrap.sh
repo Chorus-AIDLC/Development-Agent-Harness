@@ -105,13 +105,14 @@ create_label() {
 
 create_label "harness:idea"        "#7C3AED" "Idea awaiting elaboration"
 create_label "harness:elaborating" "#F59E0B" "Under AI elaboration"
-create_label "harness:proposal"    "#3B82F6" "Proposal pending approval"
-create_label "harness:approved"    "#10B981" "Proposal approved"
-create_label "harness:rejected"    "#EF4444" "Proposal rejected"
+create_label "harness:proposal"    "#3B82F6" "Proposal submitted (identity label — stays permanently)"
+create_label "harness:approved"    "#10B981" "Proposal approved (stacked with harness:proposal)"
+create_label "harness:rejected"    "#EF4444" "Proposal rejected (stacked with harness:proposal)"
 create_label "harness:pm"          "#8B5CF6" "PM Agent work item"
 create_label "harness:dev"         "#06B6D4" "Developer Agent work item"
 create_label "harness:admin"       "#F97316" "Admin review needed"
 create_label "harness:agent"       "#6366F1" "Assigned to AI Agent"
+create_label "harness:ac-passed"   "#14B8A6" "All acceptance criteria self-checked as passed"
 
 # Step 4: Validate Workflow States
 echo ""

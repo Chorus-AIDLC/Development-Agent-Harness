@@ -1,0 +1,20 @@
+{
+  "name": "proposal",
+  "version": "0.3.0",
+  "author": "chorus-aidlc",
+  "license": "MIT",
+  "chorus": {
+    "category": "project-management",
+    "mcp_server": "linear",
+    "files": {
+      "skill": "SKILL.md"
+    },
+    "requires": {
+      "mcp": ["linear"]
+    },
+    "triggers": [
+      "proposal", "prd", "create proposal", "submit proposal",
+      "task draft", "document draft", "planning"
+    ]
+  }
+}

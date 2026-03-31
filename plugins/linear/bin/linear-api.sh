@@ -226,30 +226,89 @@ cmd_graphql() {
   linear_graphql "$query" "$variables"
 }
 
+# Create a Linear document (workaround for MCP server bug in create_document)
+# Usage: linear-api.sh create-document --title <title> --content <content> [--project <id> | --team <id>]
+# At least one of --project or --team is required by the Linear API.
+cmd_create_document() {
+  local title="" content="" project_id="" team_id=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --title)   title="$2"; shift 2 ;;
+      --content) content="$2"; shift 2 ;;
+      --project) project_id="$2"; shift 2 ;;
+      --team)    team_id="$2"; shift 2 ;;
+      *) die "Unknown option: $1. Usage: create-document --title <t> --content <c> [--project <id> | --team <id>]" ;;
+    esac
+  done
+  [ -n "$title" ] || die "Usage: create-document --title <title> --content <content> [--project <id> | --team <id>]"
+
+  command -v jq &>/dev/null || die "jq is required for create-document"
+
+  # Build input object, then embed as JSON string in mutation
+  # This avoids jq --arg escaping '!' in GraphQL non-null type markers
+  local input_obj
+  input_obj=$(jq -n \
+    --arg t "$title" \
+    --arg c "$content" \
+    --arg p "$project_id" \
+    --arg tm "$team_id" \
+    '{ title: $t }
+     + (if $c  != "" then { content: $c }   else {} end)
+     + (if $p  != "" then { projectId: $p } else {} end)
+     + (if $tm != "" then { teamId: $tm }   else {} end)')
+
+  local body
+  body=$(jq -n --argjson input "$input_obj" \
+    '{ query: "mutation($input: DocumentCreateInput!) { documentCreate(input: $input) { success document { id title } } }", variables: { input: $input } }')
+
+  require_env
+  local result
+  result=$(curl -s -S -X POST \
+    -H "Authorization: ${LINEAR_API_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "$body" \
+    "https://api.linear.app/graphql" 2>&1) || {
+    echo "CURL_ERROR: Failed to reach Linear API" >&2
+    return 1
+  }
+
+  local success
+  success=$(echo "$result" | jq -r '.data.documentCreate.success // false' 2>/dev/null) || true
+  if [ "$success" = "true" ]; then
+    echo "$result" | jq '.data.documentCreate.document'
+  else
+    echo "ERROR: documentCreate failed" >&2
+    echo "$result" >&2
+    return 1
+  fi
+}
+
 # ===== Main Dispatch =====
 
 cmd="${1:-}"
 shift || true
 
 case "$cmd" in
-  graphql)         cmd_graphql "$@" ;;
-  state-get)       state_get "${1:-}" ;;
-  state-set)       state_set "${1:-}" "${2:-}" ;;
-  state-delete)    state_delete "${1:-}" ;;
-  session-read)    session_file_read "${1:-}" ;;
-  session-list)    session_file_list ;;
-  hook-output)     hook_output "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
+  graphql)           cmd_graphql "$@" ;;
+  create-document)   cmd_create_document "$@" ;;
+  state-get)         state_get "${1:-}" ;;
+  state-set)         state_set "${1:-}" "${2:-}" ;;
+  state-delete)      state_delete "${1:-}" ;;
+  session-read)      session_file_read "${1:-}" ;;
+  session-list)      session_file_list ;;
+  hook-output)       hook_output "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
   *)
     echo "Usage: linear-api.sh <command> [args...]"
     echo ""
     echo "Commands:"
-    echo "  graphql <query> [vars_json]          Call Linear GraphQL API"
-    echo "  state-get <key>                      Read from state.json"
-    echo "  state-set <key> <value>              Write to state.json"
-    echo "  state-delete <key>                   Delete key from state.json"
-    echo "  session-read <name>                  Read session file for an agent"
-    echo "  session-list                         List all session files"
-    echo "  hook-output <msg> [ctx] [event] [ui] Produce hook output JSON"
+    echo "  graphql <query> [vars_json]            Call Linear GraphQL API"
+    echo "  create-document <title> [content] [id] Create a Linear document (bypasses MCP bug)"
+    echo "  state-get <key>                        Read from state.json"
+    echo "  state-set <key> <value>                Write to state.json"
+    echo "  state-delete <key>                     Delete key from state.json"
+    echo "  session-read <name>                    Read session file for an agent"
+    echo "  session-list                           List all session files"
+    echo "  hook-output <msg> [ctx] [event] [ui]   Produce hook output JSON"
     exit 1
     ;;
 esac

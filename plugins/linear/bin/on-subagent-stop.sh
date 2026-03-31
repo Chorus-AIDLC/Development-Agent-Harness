@@ -2,7 +2,7 @@
 # on-subagent-stop.sh — SubagentStop hook
 # Triggered when a sub-agent (teammate) exits.
 # Cleans up local state and session files.
-# Optionally posts a completion comment on tracked Linear issues.
+# Posts completion comment + verify reminder + unblocked task discovery.
 #
 # Output: JSON with systemMessage (user) + additionalContext (Claude)
 
@@ -47,10 +47,45 @@ DISPLAY_NAME="${AGENT_NAME:-${SESSION_NAME:-${AGENT_ID}}}"
 # Check if there's a tracked issue ID for this agent
 TRACKED_ISSUE=$("$API" state-get "issue_for_agent_${AGENT_ID}" 2>/dev/null) || true
 
-# Post completion comment on tracked issue (best effort)
+# === Post completion comment with structured work report ===
 COMMENT_OK=false
+VERIFY_HINT=""
+UNBLOCKED_HINT=""
+
 if [ -n "$TRACKED_ISSUE" ]; then
-  COMMENT_QUERY="mutation { commentCreate(input: { issueId: \"${TRACKED_ISSUE}\", body: \"Agent '${DISPLAY_NAME}' completed work on this issue.\" }) { success comment { id } } }"
+  # Build completion comment body
+  COMMENT_BODY="Agent '${DISPLAY_NAME}' completed work on this issue."
+
+  # Check if issue has harness:ac-passed label (indicates AC self-check passed)
+  ISSUE_DATA=$("$API" graphql "query { issue(id: \"${TRACKED_ISSUE}\") { state { name } labels { nodes { name } } relations(first: 50) { nodes { type relatedIssue { id identifier state { name } } } } } }" 2>/dev/null) || true
+
+  if [ -n "$ISSUE_DATA" ]; then
+    ISSUE_STATUS=$(echo "$ISSUE_DATA" | jq -r '.data.issue.state.name // ""' 2>/dev/null) || true
+    HAS_AC_PASSED=$(echo "$ISSUE_DATA" | jq -r '.data.issue.labels.nodes[] | select(.name == "harness:ac-passed") | .name' 2>/dev/null) || true
+
+    # === Verify reminder ===
+    if [ -n "$HAS_AC_PASSED" ] && [ "$ISSUE_STATUS" = "In Review" ]; then
+      VERIFY_HINT="Task is in 'In Review' with all AC self-checked as passed (harness:ac-passed). Ready for Admin verification."
+    fi
+
+    # === Unblocked task discovery ===
+    if [ "$ISSUE_STATUS" = "Done" ] || [ "$ISSUE_STATUS" = "In Review" ]; then
+      # Find tasks that this issue blocks
+      BLOCKED_TASKS=$(echo "$ISSUE_DATA" | jq -r '
+        [.data.issue.relations.nodes[]
+         | select(.type == "blocks")
+         | .relatedIssue
+         | select(.state.name == "Todo" or .state.name == "Backlog")
+         | .identifier] | join(", ")' 2>/dev/null) || true
+
+      if [ -n "$BLOCKED_TASKS" ]; then
+        UNBLOCKED_HINT="Potentially unblocked downstream tasks: ${BLOCKED_TASKS}. Check if all their blockers are now resolved."
+      fi
+    fi
+  fi
+
+  # Post the completion comment
+  COMMENT_QUERY="mutation { commentCreate(input: { issueId: \"${TRACKED_ISSUE}\", body: \"${COMMENT_BODY}\" }) { success comment { id } } }"
   COMMENT_RESULT=$("$API" graphql "$COMMENT_QUERY" 2>/dev/null) || true
   if command -v jq &>/dev/null && [ -n "$COMMENT_RESULT" ]; then
     COMMENT_SUCCESS=$(echo "$COMMENT_RESULT" | jq -r '.data.commentCreate.success // false' 2>/dev/null) || true
@@ -88,6 +123,12 @@ fi
 CONTEXT_MSG="Linear Harness session for sub-agent '${DISPLAY_NAME}' cleaned up."
 if [ "$COMMENT_OK" = true ]; then
   CONTEXT_MSG="${CONTEXT_MSG} Completion comment posted on issue ${TRACKED_ISSUE}."
+fi
+if [ -n "$VERIFY_HINT" ]; then
+  CONTEXT_MSG="${CONTEXT_MSG} ${VERIFY_HINT}"
+fi
+if [ -n "$UNBLOCKED_HINT" ]; then
+  CONTEXT_MSG="${CONTEXT_MSG} ${UNBLOCKED_HINT}"
 fi
 
 "$API" hook-output \
