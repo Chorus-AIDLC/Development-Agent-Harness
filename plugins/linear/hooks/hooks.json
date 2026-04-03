@@ -21,6 +21,17 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": ".*update_issue$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/on-post-update-issue.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "EnterPlanMode",

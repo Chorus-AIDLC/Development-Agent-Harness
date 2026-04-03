@@ -206,18 +206,26 @@ search_issues({ teamId: "team-uuid", status: "Todo", labelIds: ["harness-dev-lab
 get_issue({ issueId: "task-1-uuid" })
 get_issue({ issueId: "task-2-uuid" })
 
-# 3. Spawn sub-agents
+# 3. Claim tasks BEFORE spawning — set assignee and status
+update_issue({ issueId: "ENG-201", assigneeId: "me", status: "In Progress", labelIds: ["harness-dev-label-uuid", "harness-agent-label-uuid"] })
+update_issue({ issueId: "ENG-202", assigneeId: "me", status: "In Progress", labelIds: ["harness-dev-label-uuid", "harness-agent-label-uuid"] })
+
+# 4. Spawn sub-agents — MUST include full workflow instructions
 Task({
   name: "worker-1",
-  prompt: "Implement Salesforce connector.\nLinear issue: linear:issue:ENG-201\nFollow the developer workflow."
+  prompt: "Implement Salesforce connector.\nLinear issue: linear:issue:ENG-201\n\nAfter completing the implementation, you MUST follow the full submission workflow:\n1. Self-check each AC item with evidence (post as comment)\n2. Check off AC items in the issue description\n3. Add harness:ac-passed label\n4. Submit for verification: set status to 'In Review', add harness:admin label\n5. Post a submission summary comment\n\nDo NOT just move the status — the labels trigger automated review agents."
 })
 ```
 
+**Important:**
+- The Team Lead must claim tasks (assign + set In Progress) **before** spawning sub-agents. Sub-agents may not have permission to self-assign, and unclaimed tasks have no assignee trail.
+- The spawn prompt **must include the submission workflow** (self-check → ac-passed label → admin label → In Review). Sub-agents do not automatically read the `/develop` skill, so label and status steps must be explicit in the prompt. Without these labels, the PostToolUse hook cannot trigger review agents.
+
 **Wave-based execution:**
-1. Spawn Wave 1 workers (tasks with no blockers)
+1. Claim and spawn Wave 1 workers (tasks with no blockers)
 2. Wait for completion — check via `get_comments`
 3. After Wave 1 tasks are Done, find newly unblocked tasks
-4. Spawn Wave 2 workers
+4. Claim and spawn Wave 2 workers
 5. Repeat until all tasks complete
 
 ### Linking CC Tasks to Linear Issues

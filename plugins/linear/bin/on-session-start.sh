@@ -89,11 +89,11 @@ if command -v jq &>/dev/null && [ -n "$LABEL_RESULT" ]; then
     create_label_if_missing() {
       local name="$1" color="$2"
       if ! echo "$EXISTING_LABELS" | grep -qx "$name" 2>/dev/null; then
-        # Bypass linear_graphql to avoid jq --arg escaping '!' in GraphQL non-null types
+        # Create workspace-level labels (no teamId) so they're shared across all teams
         local body
         body=$(jq -n \
-          --arg n "$name" --arg c "$color" --arg t "$BOOTSTRAP_TEAM" \
-          '{"query": "mutation { issueLabelCreate(input: { name: \($n | @json), color: \($c | @json), teamId: \($t | @json) }) { success } }"}')
+          --arg n "$name" --arg c "$color" \
+          '{"query": "mutation { issueLabelCreate(input: { name: \($n | @json), color: \($c | @json) }) { success } }"}')
         curl -s -X POST \
           -H "Authorization: ${LINEAR_API_KEY}" \
           -H "Content-Type: application/json" \

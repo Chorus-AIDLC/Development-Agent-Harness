@@ -20,17 +20,19 @@ Each stage has dedicated skills with Linear-specific guidance, and the plugin au
 
 | Plugin | Platform | Version | Status |
 |--------|----------|---------|--------|
-| [linear](plugins/linear/) | [Linear](https://linear.app) | v0.3.0 | Active |
+| [linear](plugins/linear/) | [Linear](https://linear.app) | v0.4.0 | Active |
 
 ## Key Features
 
 - **6 modular skills** — core, idea, proposal, develop, quick-dev, review
-- **Structured elaboration** — multi-round Q&A with categories and depth levels
+- **Independent review agents** — `proposal-reviewer` and `task-reviewer` auto-suggested via PostToolUse hooks after submission
+- **Structured elaboration** — multi-round Q&A via `AskUserQuestion` with categories and depth levels
 - **Proposal label state machine** — draft → submitted → approved/rejected via label stacking
 - **Structured acceptance criteria** — `AC-{n}:` format with dev self-check and admin verification
 - **Quick-Dev fast track** — skip Idea→Proposal for small tasks, with admin self-verify
 - **Agent Teams integration** — wave-based parallel execution with DAG-aware task dispatch
-- **Automated hooks** — session lifecycle, verify reminders, unblocked task discovery
+- **Automated hooks** — session lifecycle, PostToolUse review triggers, unblocked task discovery
+- **Configurable via userConfig** — `enableProposalReviewer` / `enableTaskReviewer` toggles in plugin settings
 - **Client-side sessions** — no server dependency, full observability via Linear Issue Comments
 
 ## Install
@@ -64,13 +66,16 @@ export LINEAR_API_KEY="lin_api_xxx"
 .claude-plugin/           # Marketplace manifest
 plugins/
   linear/                 # Linear platform plugin
-    .claude-plugin/       # Plugin manifest (v0.3.0)
+    .claude-plugin/       # Plugin manifest + userConfig
     .mcp.json             # MCP server config
-    hooks/                # Claude Code hook routing
+    hooks/                # Claude Code hook routing (incl. PostToolUse)
     bin/                  # Hook scripts + CLI tools
+    agents/               # Independent review agents
+      proposal-reviewer.md  # Read-only proposal QA (VERDICT: PASS/FAIL/PARTIAL)
+      task-reviewer.md      # Read-only task verification (runs tests, checks AC)
     skills/
       linear-harness/     # Core skill — overview, shared tools, setup
-      idea/               # Ideation — elaboration rounds
+      idea/               # Ideation — elaboration via AskUserQuestion
       proposal/           # Planning — PRD, tasks, DAG, label state machine
       develop/            # Development — claim, implement, AC self-check
       quick-dev/          # Fast track — skip proposal for small tasks

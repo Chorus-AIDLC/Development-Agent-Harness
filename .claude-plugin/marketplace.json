@@ -10,10 +10,10 @@
     {
       "name": "linear",
       "source": "./plugins/linear",
-      "description": "AI-DLC development harness for Linear. 6 modular skills (idea, proposal, develop, quick-dev, review), structured elaboration, label-stacking proposal state machine, acceptance criteria management, and multi-agent team observability.",
-      "version": "0.3.0",
+      "description": "AI-DLC development harness for Linear. 6 modular skills, independent review agents (proposal-reviewer + task-reviewer), PostToolUse hooks, structured elaboration via AskUserQuestion, label-stacking proposal state machine, acceptance criteria management, and multi-agent team observability.",
+      "version": "0.4.0",
       "category": "project-management",
-      "tags": ["linear", "ai-dlc", "collaboration", "mcp", "session", "multi-agent", "acceptance-criteria", "quick-dev"]
+      "tags": ["linear", "ai-dlc", "collaboration", "mcp", "session", "multi-agent", "acceptance-criteria", "quick-dev", "review-agents"]
     }
   ]
 }

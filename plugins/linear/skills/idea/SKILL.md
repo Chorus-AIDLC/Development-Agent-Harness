@@ -101,36 +101,72 @@ Tag each question with a category for clarity:
 - `user_scenario` — User stories, workflows, personas
 - `scope` — Boundaries, what's in/out
 
-##### Round 1: Post Elaboration Questions
+##### Round 1: Present Questions to User
 
-Update labels and post structured questions:
+Update labels first:
 
 ```
 update_issue({
   issueId: "ENG-101",
   labelIds: ["harness-elaborating-label-uuid", "harness-pm-label-uuid", "harness-agent-label-uuid"]
 })
+```
 
-create_comment({
-  issueId: "ENG-101",
-  body: "## Elaboration Round 1\n\n### [functional] User Access\n1. What user roles should have access to this feature?\n   - (a) All users\n   - (b) Admin only\n   - (c) Role-based (configurable)\n\n### [technical_context] Integration\n2. Are there existing systems this needs to integrate with?\n\n### [scope] Boundaries\n3. What is explicitly out of scope for v1?\n\n### [non_functional] Performance\n4. Are there specific latency or throughput requirements?\n\nPlease reply to each question. I will proceed once I have sufficient context."
+**Present questions to the user — MUST use `AskUserQuestion`.** Do NOT display questions as plain text. Do NOT include an "Other" option — the UI automatically adds a free-text "Other" option to every question. Map each elaboration question to an AskUserQuestion call (max 4 questions per call; batch if needed):
+
+```
+AskUserQuestion({
+  questions: [
+    {
+      question: "What user roles should have access to this feature?",
+      header: "Access",
+      options: [
+        { label: "All users", description: "No access restrictions" },
+        { label: "Admin only", description: "Restricted to admin role" },
+        { label: "Role-based", description: "Configurable per role" }
+      ],
+      multiSelect: false
+    },
+    {
+      question: "Are there existing systems this needs to integrate with?",
+      header: "Integration",
+      options: [
+        { label: "None", description: "Standalone feature" },
+        { label: "Internal APIs", description: "Integrates with existing internal services" },
+        { label: "External APIs", description: "Integrates with third-party services" }
+      ],
+      multiSelect: true
+    }
+  ]
 })
 ```
 
-##### Wait for and Process Responses
-
-```
-get_comments({ issueId: "ENG-101" })
-```
-
-Review answers. If any are incomplete, ambiguous, or contradictory, create a follow-up round:
-
-##### Follow-Up Rounds (if needed)
+After receiving answers, **record them as a Linear comment** for audit trail:
 
 ```
 create_comment({
   issueId: "ENG-101",
-  body: "## Elaboration Round 2 — Follow-up\n\n### [functional] Clarification\n1. You mentioned 'role-based access' — which specific roles should be defined at launch?\n\n### [scope] Ambiguity\n2. The timeline says 'Q2' — is that a hard deadline or a target?\n\n**Issue from Round 1:** Q1 answer ('role-based') conflicts with the description which says 'all users'. Please clarify."
+  body: "## Elaboration Round 1\n\n### [functional] User Access\nQ: What user roles should have access?\n**A: Role-based (configurable)**\n\n### [technical_context] Integration\nQ: Existing systems to integrate with?\n**A: Internal APIs + External APIs**"
+})
+```
+
+##### Follow-Up Rounds (if needed)
+
+If answers are incomplete, ambiguous, or contradictory, use `AskUserQuestion` again for follow-up:
+
+```
+AskUserQuestion({
+  questions: [
+    {
+      question: "You mentioned 'role-based access' — which specific roles should be defined at launch?",
+      header: "Roles",
+      options: [
+        { label: "Admin + Editor", description: "Two roles for v1" },
+        { label: "Admin + Editor + Viewer", description: "Three roles for v1" }
+      ],
+      multiSelect: false
+    }
+  ]
 })
 ```
 
@@ -139,9 +175,20 @@ Tag follow-up issues explicitly:
 - **Ambiguity** — answer is unclear or can be interpreted multiple ways
 - **Incomplete** — answer doesn't provide enough detail to proceed
 
+Record follow-up answers as a comment:
+
+```
+create_comment({
+  issueId: "ENG-101",
+  body: "## Elaboration Round 2 — Follow-up\n\n### [functional] Clarification\nQ: Which specific roles at launch?\n**A: Admin + Editor**\n\n**Issue from Round 1:** Resolved — role-based access with Admin + Editor roles."
+})
+```
+
 ##### Skip Elaboration
 
-For trivially clear ideas (bug fix with clear steps), you may skip elaboration **only with user permission**. Post a comment explaining why:
+For trivially clear ideas (bug fix with clear steps), you may skip elaboration — but **you MUST ask the user for permission first** via `AskUserQuestion`. Never skip on your own judgment alone.
+
+After permission granted, post a comment explaining why:
 
 ```
 create_comment({
@@ -152,12 +199,26 @@ create_comment({
 
 ### Step 6: Summarize and Confirm
 
-Once all questions are answered, post a consolidated summary and ask for confirmation:
+Once all questions are answered, post a consolidated summary as a Linear comment **and** confirm with the user via `AskUserQuestion`:
 
 ```
 create_comment({
   issueId: "ENG-101",
-  body: "## Elaboration Summary\n\nBased on our discussion:\n\n- **User Access**: Role-based, with Admin and Editor roles at launch\n- **Integration**: Salesforce REST API + internal LDAP\n- **Scale**: ~50K records/day\n- **Timeline**: Q2 2026 (target, not hard deadline)\n- **Out of Scope**: De-provisioning, non-Salesforce CRM\n\nDoes this match your intent? If confirmed, I will create a formal proposal."
+  body: "## Elaboration Summary\n\nBased on our discussion:\n\n- **User Access**: Role-based, with Admin and Editor roles at launch\n- **Integration**: Salesforce REST API + internal LDAP\n- **Scale**: ~50K records/day\n- **Timeline**: Q2 2026 (target, not hard deadline)\n- **Out of Scope**: De-provisioning, non-Salesforce CRM"
+})
+
+AskUserQuestion({
+  questions: [
+    {
+      question: "Does this elaboration summary match your intent? Ready to proceed to proposal?",
+      header: "Confirm",
+      options: [
+        { label: "Confirmed", description: "Summary is accurate, proceed to /proposal" },
+        { label: "Needs changes", description: "Some points need correction before proceeding" }
+      ],
+      multiSelect: false
+    }
+  ]
 })
 ```
 
@@ -177,8 +238,9 @@ Even if requirements are discussed outside the formal elaboration flow (e.g., in
 
 - When combining multiple ideas, explain how they relate in the elaboration summary
 - Elaboration improves Proposal quality — don't skip it unless requirements are trivially clear
-- Record decisions made in conversation as elaboration rounds for auditability
-- Always ask for confirmation before proceeding to proposal
+- **Use `AskUserQuestion` for all interactive questions — never plain text**
+- Record decisions made in conversation as elaboration rounds (Linear comments) for auditability
+- Always ask for confirmation via `AskUserQuestion` before proceeding to proposal
 - Use structured round format consistently for machine and human readability
 
 ---

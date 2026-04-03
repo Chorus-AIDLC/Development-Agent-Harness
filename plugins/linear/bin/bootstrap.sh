@@ -86,7 +86,7 @@ create_label() {
   fi
 
   local result
-  result=$("$API" graphql "mutation(\$input: IssueLabelCreateInput!) { issueLabelCreate(input: \$input) { success issueLabel { id name } } }" "{\"input\":{\"name\":\"$name\",\"color\":\"$color\",\"teamId\":\"$TEAM_ID\"}}" 2>/dev/null) || {
+  result=$("$API" graphql "mutation(\$input: IssueLabelCreateInput!) { issueLabelCreate(input: \$input) { success issueLabel { id name } } }" "{\"input\":{\"name\":\"$name\",\"color\":\"$color\"}}" 2>/dev/null) || {
     echo "  FAIL  $name"
     return 0
   }

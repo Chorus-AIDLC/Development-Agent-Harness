@@ -85,6 +85,7 @@ Add `harness:approved` **on top of** `harness:proposal` (do NOT remove `harness:
 ```
 update_issue({
   issueId: "ENG-101",
+  status: "In Progress",
   labelIds: [
     "harness-proposal-label-uuid",
     "harness-approved-label-uuid",
@@ -98,6 +99,8 @@ create_comment({
   body: "## Proposal Approved\n\nQuality criteria met:\n- Clear problem statement and solution scope\n- Complete PRD\n- Well-defined tasks with measurable AC\n- Valid dependency graph\n\nActivating all tasks to Todo."
 })
 ```
+
+Note: Set status to **In Progress** — the proposal is now actively being developed via its sub-issues.
 
 **Activate sub-issues** (move from Backlog to Todo):
 
